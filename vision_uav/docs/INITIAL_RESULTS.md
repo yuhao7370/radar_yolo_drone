@@ -1,144 +1,130 @@
 # INITIAL_RESULTS
 
-## 时间
+## 日期
 
-2026-04-15
+2026-04-16
 
-## 已完成内容
+## 当前状态
 
-1. 独立视觉工作区 `vision_uav/` 已建立。
-2. `Anti-UAV` RGB 到 YOLO detect 的转换脚本已落地。
-3. `YOLO26` 训练、评估、离线推理、ONNX 导出入口已落地。
-4. `predictions.jsonl` 的结果契约已固定。
-5. 独立 `conda` 环境 `vision-uav` 已创建完成。
-6. `Anti-UAV300.zip` 已下载并解压到 `vision_uav/data/raw/anti_uav/Anti-UAV300/`。
-7. 冒烟数据集已从真实数据成功生成。
-8. `YOLO26n` 1 epoch 冒烟训练已跑通。
-9. 完整 `Anti-UAV300` 检测数据集已展开为 YOLO detect 目录。
+- `vision_uav/` 已经从“离线基线骨架”推进到“有真实正式结果”的阶段。
+- `Anti-UAV300` RGB 数据已经完整转成 YOLO detect 目录，可直接复现训练、评估、推理和导出。
+- A800 正式训练、`test` 评估、3 段测试视频推理和 ONNX 导出都已完成。
+- 远端关键产物和日志已经拉回本地，并在 `vision_uav/runs/backup/20260415_a800_formal/` 做了双阶段备份。
 
-## 本机环境现状
+## 数据与环境基线
 
-以仓库原有 Python 环境执行探测，结果如下：
+- 原始数据：`vision_uav/data/raw/anti_uav/Anti-UAV300/`
+- 处理后数据：`vision_uav/data/processed/anti_uav_rgb_detect/`
+- 处理后规模：
+  - `train = 29,924` 帧
+  - `val = 6,208` 帧
+  - `test = 8,547` 帧
+- 本地已验证的独立环境：`vision-uav`
+- 本地 GPU：`NVIDIA GeForce RTX 4070 Laptop GPU`
+- 正式训练 GPU：`NVIDIA A800-SXM4-80GB`
 
-- GPU：`NVIDIA GeForce RTX 4070 Laptop GPU`
-- 现有 Python：`3.11.7`
-- `torch`：`2.6.0+cpu`
-- `torch.cuda.is_available()`：`False`
-- `ultralytics`：`8.3.163`
-- `cv2`：`4.10.0`
-- `onnx`：`1.19.1`
-- `onnxruntime`：`1.16.3`
+## 本地冒烟结果
 
-结论：当前默认环境只能做 CPU 推理验证，不能作为正式训练环境，必须切到独立 CUDA conda 环境。
+使用 `YOLO26n` 在本地 4070 上完成过 1 epoch 冒烟训练，用于确认数据转换、CUDA 环境和训练入口已打通：
 
-## 独立训练环境验证
-
-以 `C:\Users\27377\anaconda3\envs\vision-uav\python.exe` 执行 `check_env.py --smoke-model yolo26n.pt`，结果如下：
-
-- Python：`3.11.15`
-- `torch`：`2.5.1`
-- `ultralytics`：`8.4.37`
-- `cv2`：`4.13.0`
-- `onnx`：`1.21.0`
-- `onnxruntime`：`1.24.4`
-- `torch.cuda.is_available()`：`True`
-- GPU：`NVIDIA GeForce RTX 4070 Laptop GPU`
-- `yolo26n.pt`：可正常加载
-
-结论：`vision-uav` 环境已经满足第一阶段的 CUDA 训练和模型加载前提。
-
-## 数据落地结果
-
-- 数据源：Hugging Face 镜像 `Anti-UAV300.zip`
-- 压缩包大小：`7,937,237,349` 字节
-- 解压位置：`vision_uav/data/raw/anti_uav/Anti-UAV300/`
-- 真实目录结构：`train/val/test/<sequence>/visible.mp4 + visible.json`
-- Windows 兼容处理：已创建 `C:\vision_uav_data` junction，供 `Ultralytics` 避开中文路径问题
-- 完整正式数据集转换统计：
-  - `train`：`160` 个序列，`29,924` 帧，`28,470` 个正样本帧，`1,454` 个空标签背景帧
-  - `val`：`67` 个序列，`6,208` 帧，`5,850` 个正样本帧，`358` 个空标签背景帧
-  - `test`：`91` 个序列，`8,547` 帧，`7,992` 个正样本帧，`555` 个空标签背景帧
-
-## 冒烟数据集结果
-
-使用 `vision_uav/configs/anti_uav_prepare_smoke.yaml` 从真实数据生成：
-
-- `train`：`8` 个序列，`988` 帧，`949` 个正样本帧，`39` 个空标签背景帧
-- `val`：`2` 个序列，`168` 帧，`168` 个正样本帧
-- `test`：`2` 个序列，`113` 帧，`95` 个正样本帧，`18` 个空标签背景帧
-
-## 冒烟训练结果
-
-使用 `YOLO26n`、`imgsz=640`、`batch=8`、`epochs=1` 在 CUDA 环境上完成训练：
-
-- 训练输出目录：`vision_uav/runs/train/anti_uav_rgb_yolo26n_smoke3/`
-- 权重文件：`best.pt`、`last.pt`
-- 验证指标：
+- 输出目录：`vision_uav/runs/train/anti_uav_rgb_yolo26n_smoke3/`
+- 指标：
   - `precision = 0.786`
   - `recall = 0.745`
   - `mAP50 = 0.835`
   - `mAP50-95 = 0.311`
 
-这组结果仅用于验证“数据转换 + dataloader + CUDA 训练链”已打通，不代表正式基线性能。
+这组结果只用于证明链路已通，不作为正式基线。
 
-## 已知环境问题
+## A800 正式训练结果
 
-- `conda run -n vision-uav ...` 在当前 Windows GBK 控制台下会触发一次 `UnicodeEncodeError` 的 Conda 输出编码问题。
-- 直接使用环境内的 `python.exe` 可以正常执行，不影响训练脚本本身。
+正式训练使用：
 
-## 当前已验证的脚本状态
+- 模型：`YOLO26s`
+- 图像尺寸：`960`
+- batch：`64`
+- 训练卡：`A800 80GB`
+- 训练目录：`vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/`
 
-已通过静态或启动级验证：
+训练结论：
 
-- `scripts/check_env.py`
-- `scripts/prepare_anti_uav.py`
-- `scripts/train.py`
-- `scripts/evaluate.py`
-- `scripts/infer_video.py`
-- `scripts/export_onnx.py`
+- 触发 `EarlyStopping`
+- 最佳 epoch：`18`
+- 实际运行到：`26` epoch
+- 总耗时：`2.554` 小时
 
-验证方式：
+最佳模型 `best.pt` 的最终验证结果：
 
-- `python -m py_compile`
-- `python <script> --help`
+- `precision ≈ 0.980`
+- `recall ≈ 0.978`
+- `mAP50 ≈ 0.993`
+- `mAP50-95 ≈ 0.686`
 
-## 当前未完成项
+`results.csv` 中最佳行对应指标：
 
-以下结果还没有真实跑出：
+- `best_row_epoch = 18`
+- `best_row_precision = 0.97998`
+- `best_row_recall = 0.97897`
+- `best_row_mAP50 = 0.99289`
+- `best_row_mAP50_95 = 0.68635`
 
-1. `YOLO26s` 正式训练指标
-2. `best.pt -> model.onnx` 的真实导出产物
-3. `Drone-vs-Bird` 上的鸟类误检率
+## Test 评估结果
 
-## 下一步最短路径
+使用 `best.pt` 在 `test` 集上单独评估：
 
-1. 在 `vision-uav` 环境中从 `train_baseline.yaml` 开始跑正式训练。
-2. 用 `infer_video.py` 对真实测试视频导出 `overlay.mp4 + predictions.jsonl`。
-3. 用 `export_onnx.py` 导出第一版 `model.onnx` 并做 `onnxruntime` 验证。
-4. 引入 `Drone-vs-Bird` 评估鸟类误检率，再决定要不要补第二阶段分类头。
+- 配置：`vision_uav/configs/eval_a800_test_yolo26s.yaml`
+- 输出目录：`vision_uav/runs/eval/anti_uav_rgb_yolo26s_a800_b643_test/`
 
-## 正式 Probe 结果
+指标：
 
-已按正式计划运行过一次 `YOLO26s` 的全量 probe：
+- `precision = 0.96060`
+- `recall = 0.90000`
+- `mAP50 = 0.93655`
+- `mAP50-95 = 0.53709`
 
-- 配置：`train_probe_full_yolo26s.yaml`
-- 关键参数：`imgsz=960`、`batch=8`、`epochs=1`、`fraction=0.02`
-- 输出目录：`vision_uav/runs/train/anti_uav_rgb_yolo26s_probe_full/`
-- 权重文件：`best.pt`、`last.pt`
-- 验证指标：
-  - `precision = 0.497`
-  - `recall = 0.435`
-  - `mAP50 = 0.303`
-  - `mAP50-95 = 0.0958`
-- probe 总耗时：约 `217.1s`
+## 测试视频推理与 ONNX 导出
+
+已完成 3 段测试视频离线推理：
+
+- `20190925_111757_1_10/visible.mp4`
+- `20190925_111757_1_1/visible.mp4`
+- `20190925_111757_1_2/visible.mp4`
+
+每段都生成了：
+
+- `overlay.mp4`
+- `predictions.jsonl`
+
+ONNX 导出结果：
+
+- 导出配置：`vision_uav/configs/export_onnx_a800_formal.yaml`
+- 实际导出文件：`vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.onnx`
+- `onnxruntime` 最小验证已通过：
+  - `onnx_input=images`
+  - `onnx_outputs=1`
+
+## 本地备份位置
+
+本轮正式结果的本地备份根目录：
+
+- `vision_uav/runs/backup/20260415_a800_formal/`
+
+其中分成两段：
+
+- `stage1_train_snapshot/`
+  - 保存正式训练目录、A800 probe 目录、主训练日志
+  - 同时保留 `tar.gz`、`manifest.txt`、`sha256.txt` 和解压目录
+- `stage2_eval_infer_export/`
+  - 保存 `test` 评估目录、3 段推理输出、`best.onnx` 和对应日志
+  - 同时保留 `tar.gz`、`manifest.txt`、`sha256.txt` 和解压目录
+
+这两个目录位于 `vision_uav/runs/` 下，已经被 `.gitignore` 排除，不会进入 Git。
 
 ## 当前结论
 
-虽然 `YOLO26s` probe 本身可以启动并跑完，但按当前 `RTX 4070 Laptop GPU 8GB + Anti-UAV300` 的真实探测结果估算：
-
-- `train_full_yolo26s_nightly_b8.yaml` 约 `90.46` 小时
-- `train_full_yolo26s_nightly_b4.yaml` 约 `144.74` 小时
-
-这已经明显超出“一夜内完成正式基线训练”的预算，所以本轮没有盲目启动正式 `YOLO26s` 夜训。当前 `run_formal_pipeline.py --phase full` 已实现并验证：它会先做 probe，再在预算超限时自动中止，而不是继续进入正式训练。
-
-当前代码层面已经把正式 pipeline、自动 probe、test 评估、3 段视频推理和 ONNX 导出都实现好了，但在继续正式训练前，需要先把正式模型或正式参数压缩到真实可跑的范围。
+- 视觉链路已经具备“可训练、可评估、可推理、可导出、可备份”的完整闭环。
+- 当前最有价值的正式模型是 `anti_uav_rgb_yolo26s_a800_b643/weights/best.pt`。
+- 下一步不应该再重复做同类训练，而应转到：
+  - 错误分析
+  - 鸟类硬负样本评估
+  - 与 `mmradar` 的时间戳和结果接口对接准备
