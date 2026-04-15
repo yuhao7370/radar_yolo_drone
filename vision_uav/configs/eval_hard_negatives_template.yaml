@@ -1,0 +1,12 @@
+model: vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt
+fallback_model: yolo11s.pt
+source: vision_uav/data/raw/hard_negatives/placeholder.mp4
+source_id: hard_negative_placeholder
+project: vision_uav/runs/hard_negatives
+name: hard_negative_placeholder
+device: 0
+imgsz: 960
+conf: 0.25
+fps: 10.0
+high_confidence_threshold: 0.5
+top_k_frames: 20
