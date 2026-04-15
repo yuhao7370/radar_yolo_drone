@@ -101,3 +101,27 @@
 - `C:\vision_uav_workspace`：工作区 ASCII junction
 
 两者存在的目的都是规避 Windows 中文路径对 `Ultralytics` / `OpenCV` 的兼容问题。
+
+## A800 训练机专项
+
+如果训练放在 `A800-SXM4-80GB` 上，不应该继续沿用 `batch=8, workers=4, cache=false` 这套保守参数。
+
+仓库里单独提供了 A800 配置：
+
+- `train_probe_full_yolo26s_a800_b64.yaml`
+- `train_full_yolo26s_a800_b64.yaml`
+- `train_full_yolo26s_a800_b48.yaml`
+
+建议顺序：
+
+1. 先跑 `train_probe_full_yolo26s_a800_b64.yaml`
+2. 如果显存和吞吐稳定，则正式训练走 `train_full_yolo26s_a800_b64.yaml`
+3. 如果 `b64` 不稳定或显存不足，再退到 `train_full_yolo26s_a800_b48.yaml`
+
+这套 A800 配置的核心变化只有三点：
+
+- `batch` 提到 `64` 或 `48`
+- `workers` 提到 `16`
+- `cache=ram`
+
+目标不是改算法，而是先把大显存和大带宽真正吃起来。
