@@ -292,3 +292,25 @@
 
 1. Anti-UAV 数据集与竞赛相关资料，见 `vision_uav/docs/DATASETS.md` 与 `vision_uav/docs/LITERATURE_NOTES.md`。
 2. 当前项目正式结果与资产位置，见 `vision_uav/docs/INITIAL_RESULTS.md` 与 `vision_uav/docs/REPORT_ASSETS_INDEX.md`。
+## 8 模型优化补充（鸟类误检）
+
+在正式基线训练完成后，本项目没有直接重训更大模型，而是先围绕“鸟类是否是主要误检来源”做了一轮工程化排查。具体过程分两步：
+
+第一步，先只使用 `Anti-UAV300` 中的空标签背景帧做 hard negative 阈值搜索。结果表明，即便把阈值从 `0.20` 提高到 `0.50`，背景负样本上的聚合 `frame_false_positive_rate` 仍然只能降到 `0.06681`，没有达到预设的 `0.05` 上限。这说明单靠“背景帧调阈值”并不足以压住误检。
+
+第二步，再引入 `FBD-SV-2024` 鸟类视频作为补充 hard negative 来源，并与背景负样本一起做联合阈值搜索。该阶段最终在 `confidence = 0.45` 收敛，联合 hard negative 的 `frame_false_positive_rate = 0.04895`，同时 `val recall` 仅下降 `0.00262`，`test recall` 下降 `0.02025`，都未超过预设的 `0.03` 容忍线。
+
+由此得到的工程结论是：
+
+- 鸟类确实是当前误检来源中的重要组成部分，否则引入鸟类 hard negative 后阈值搜索不会明显改善。
+- 但本轮还不能把“鸟类”断言为唯一主导来源，因为评估集仍然缺少更多自采纯天空、复杂背景和远距离非目标视频。
+- 现阶段最优动作不是立刻做 hard negative 补训，而是把正式离线推理阈值统一到 `0.45`，继续推进错误分析和融合接口。
+
+对应的优化结果文档见：
+
+- `vision_uav/docs/MODEL_OPTIMIZATION.md`
+
+对应的结果目录见：
+
+- `vision_uav/runs/hard_negatives/anti_uav_rgb_yolo26s_a800_b643_threshold_sweep/`
+- `vision_uav/runs/hard_negatives/anti_uav_rgb_yolo26s_a800_b643_bird_threshold_sweep/`
