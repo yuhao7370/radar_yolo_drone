@@ -1,0 +1,7 @@
+weights: vision_uav/runs/train/anti_uav_rgb_yolo26s_baseline/weights/best.pt
+data: vision_uav/data/processed/anti_uav_rgb_detect/anti_uav_rgb_detect.yaml
+split: val
+device: 0
+imgsz: 1280
+project: vision_uav/runs/eval
+name: anti_uav_rgb_yolo26s_val

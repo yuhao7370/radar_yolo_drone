@@ -1,0 +1,14 @@
+task: detect
+model: yolo26s.pt
+fallback_model: yolo11s.pt
+data: vision_uav/data/processed/anti_uav_rgb_detect/anti_uav_rgb_detect.yaml
+project: vision_uav/runs/train
+name: anti_uav_rgb_yolo26s_baseline
+device: 0
+imgsz: 1280
+epochs: 100
+batch: 2
+workers: 4
+pretrained: true
+cache: false
+verbose: true
