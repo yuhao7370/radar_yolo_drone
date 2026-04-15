@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import shutil
+import subprocess
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 import yaml
 from ultralytics import YOLO
+
+WORKSPACE_ALIAS = Path("C:/vision_uav_workspace")
+DATA_ALIAS = Path("C:/vision_uav_data")
 
 
 def workspace_root() -> Path:
@@ -27,10 +32,41 @@ def dump_yaml(path: Path, data: dict[str, Any]) -> None:
         yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)
 
 
+def ensure_junction(alias: Path, target: Path) -> Path:
+    alias = Path(os.path.abspath(alias))
+    target = target.resolve()
+    if alias.exists():
+        return alias
+    ensure_dir(alias.parent)
+    completed = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(alias), str(target)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0 and not alias.exists():
+        raise RuntimeError(
+            f"Failed to create junction {alias} -> {target}: "
+            f"{completed.stdout.strip()} {completed.stderr.strip()}".strip()
+        )
+    return alias
+
+
+def workspace_root_alias() -> Path:
+    return ensure_junction(WORKSPACE_ALIAS, workspace_root())
+
+
+def data_root_alias() -> Path:
+    return ensure_junction(DATA_ALIAS, workspace_root() / "data")
+
+
 def resolve_workspace_path(value: str | Path) -> Path:
     candidate = Path(value)
     if candidate.is_absolute():
         return candidate
+    if candidate.parts and candidate.parts[0] == workspace_root().name:
+        alias = workspace_root_alias()
+        return alias.joinpath(*candidate.parts[1:])
     return workspace_root().parent / candidate
 
 
@@ -40,7 +76,14 @@ def ensure_dir(path: Path) -> Path:
 
 
 def pretrained_weights_dir() -> Path:
-    return ensure_dir(workspace_root() / "weights" / "pretrained")
+    return ensure_dir(workspace_root_alias() / "weights" / "pretrained")
+
+
+def reset_dir(path: Path) -> Path:
+    if path.exists():
+        shutil.rmtree(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 @contextmanager
@@ -78,3 +121,13 @@ def load_yolo_model(model_ref: str, fallback_model: str | None = None) -> YOLO:
         print(f"primary_model_failed={model_ref}")
         print(f"fallback_model={fallback_model}")
         return _instantiate(fallback_model)
+
+
+def extract_detection_metrics(metrics) -> dict[str, float]:
+    box = metrics.box
+    return {
+        "precision": float(box.p.mean() if hasattr(box.p, "mean") else box.p),
+        "recall": float(box.r.mean() if hasattr(box.r, "mean") else box.r),
+        "mAP50": float(box.map50),
+        "mAP50-95": float(box.map),
+    }

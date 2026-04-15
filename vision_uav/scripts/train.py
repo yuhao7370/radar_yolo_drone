@@ -35,20 +35,28 @@ def resolve_train_args(config: dict[str, Any]) -> dict[str, Any]:
     return train_args
 
 
-def main() -> int:
-    args = parse_args()
-    config = load_yaml(resolve_workspace_path(args.config))
-    model_name = args.model or str(config["model"])
+def run_train(config_path: str | Path, model_override: str | None = None) -> dict[str, Any]:
+    config = load_yaml(resolve_workspace_path(config_path))
+    model_name = model_override or str(config["model"])
     fallback_model = config.get("fallback_model")
-
     model = load_yolo_model(model_name, str(fallback_model) if fallback_model else None)
     train_args = resolve_train_args(config)
     results = model.train(**train_args)
-
     save_dir = getattr(results, "save_dir", None)
-    if save_dir is not None:
-        print(f"save_dir={save_dir}")
-    print(f"trained_model={model.model_name if hasattr(model, 'model_name') else model_name}")
+    return {
+        "config": config,
+        "train_args": train_args,
+        "save_dir": Path(save_dir) if save_dir is not None else None,
+        "trained_model": model_name,
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    result = run_train(args.config, args.model)
+    if result["save_dir"] is not None:
+        print(f"save_dir={result['save_dir']}")
+    print(f"trained_model={result['trained_model']}")
     return 0
 
 

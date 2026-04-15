@@ -5,7 +5,7 @@ import argparse
 import json
 import time
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 import cv2
 
@@ -22,7 +22,11 @@ def parse_args() -> argparse.Namespace:
         default="vision_uav/configs/infer_video.yaml",
         help="Path to the inference YAML config.",
     )
+    parser.add_argument("--model", default=None, help="Optional explicit model override.")
     parser.add_argument("--source", default=None, help="Optional explicit source override.")
+    parser.add_argument("--source-id", default=None, help="Optional explicit source_id override.")
+    parser.add_argument("--name", default=None, help="Optional explicit output name override.")
+    parser.add_argument("--project", default=None, help="Optional explicit output project override.")
     return parser.parse_args()
 
 
@@ -180,15 +184,23 @@ def infer_camera_source(
         capture.release()
 
 
-def main() -> int:
-    args = parse_args()
-    config = load_yaml(resolve_workspace_path(args.config))
-    source_value = args.source or str(config["source"])
-    model_name = str(config["model"])
+def run_inference(
+    config_path: str | Path,
+    model_override: str | None = None,
+    source_override: str | None = None,
+    source_id_override: str | None = None,
+    name_override: str | None = None,
+    project_override: str | None = None,
+) -> dict[str, Any]:
+    config = load_yaml(resolve_workspace_path(config_path))
+    source_value = source_override or str(config["source"])
+    model_name = model_override or str(config["model"])
     fallback_model = config.get("fallback_model")
-    project_root = ensure_dir(resolve_workspace_path(str(config["project"])))
-    output_root = ensure_dir(project_root / str(config["name"]))
-    source_id = str(config.get("source_id", Path(source_value).stem or "camera"))
+    project_value = project_override or str(config["project"])
+    name_value = name_override or str(config["name"])
+    project_root = ensure_dir(resolve_workspace_path(project_value))
+    output_root = ensure_dir(project_root / name_value)
+    source_id = str(source_id_override or config.get("source_id", Path(source_value).stem or "camera"))
     fps = float(config.get("fps", 10.0))
     imgsz = int(config.get("imgsz", 1280))
     conf = float(config.get("conf", 0.25))
@@ -205,9 +217,28 @@ def main() -> int:
         else:
             infer_video_source(model, source_path, output_root, source_id, imgsz, conf, device)
 
-    print(f"output_root={output_root}")
-    print(f"overlay_mp4={output_root / 'overlay.mp4'}")
-    print(f"predictions_jsonl={output_root / 'predictions.jsonl'}")
+    return {
+        "config": config,
+        "output_root": output_root,
+        "overlay_mp4": output_root / "overlay.mp4",
+        "predictions_jsonl": output_root / "predictions.jsonl",
+        "source_id": source_id,
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    result = run_inference(
+        args.config,
+        model_override=args.model,
+        source_override=args.source,
+        source_id_override=args.source_id,
+        name_override=args.name,
+        project_override=args.project,
+    )
+    print(f"output_root={result['output_root']}")
+    print(f"overlay_mp4={result['overlay_mp4']}")
+    print(f"predictions_jsonl={result['predictions_jsonl']}")
     return 0
 
 

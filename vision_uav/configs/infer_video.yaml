@@ -1,10 +1,10 @@
-model: vision_uav/runs/train/anti_uav_rgb_yolo26s_baseline/weights/best.pt
+model: yolo26s.pt
 fallback_model: yolo11s.pt
 source: vision_uav/data/samples/demo.mp4
-source_id: anti_uav_demo
+source_id: formal_placeholder
 project: vision_uav/runs/infer
-name: anti_uav_rgb_demo
+name: formal_placeholder
 device: 0
-imgsz: 1280
+imgsz: 960
 conf: 0.25
 fps: 10.0

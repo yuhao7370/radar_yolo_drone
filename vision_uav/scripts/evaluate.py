@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
-from ultralytics import YOLO
-
-from common import load_yaml, resolve_workspace_path
+from common import extract_detection_metrics, load_yaml, load_yolo_model, resolve_workspace_path
 
 
 PATH_KEYS = {"weights", "data", "project"}
@@ -36,18 +35,27 @@ def resolve_eval_args(config: dict[str, Any]) -> dict[str, Any]:
     return eval_args
 
 
-def main() -> int:
-    args = parse_args()
-    config = load_yaml(resolve_workspace_path(args.config))
-    weights = args.weights or str(config["weights"])
-
-    model = YOLO(str(resolve_workspace_path(weights)))
+def run_evaluation(config_path: str | Path, weights_override: str | None = None) -> dict[str, Any]:
+    config = load_yaml(resolve_workspace_path(config_path))
+    weights = weights_override or str(config["weights"])
+    model = load_yolo_model(weights)
     eval_args = resolve_eval_args(config)
     metrics = model.val(**eval_args)
-
     save_dir = getattr(metrics, "save_dir", None)
-    if save_dir is not None:
-        print(f"save_dir={save_dir}")
+    return {
+        "config": config,
+        "metrics": metrics,
+        "summary": extract_detection_metrics(metrics),
+        "save_dir": Path(save_dir) if save_dir is not None else None,
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    result = run_evaluation(args.config, args.weights)
+    if result["save_dir"] is not None:
+        print(f"save_dir={result['save_dir']}")
+    print(json.dumps(result["summary"], ensure_ascii=False))
     print("evaluation=ok")
     return 0
 

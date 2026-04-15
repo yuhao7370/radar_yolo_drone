@@ -116,3 +116,29 @@
 2. 用 `infer_video.py` 对真实测试视频导出 `overlay.mp4 + predictions.jsonl`。
 3. 用 `export_onnx.py` 导出第一版 `model.onnx` 并做 `onnxruntime` 验证。
 4. 引入 `Drone-vs-Bird` 评估鸟类误检率，再决定要不要补第二阶段分类头。
+
+## 正式 Probe 结果
+
+已按正式计划运行过一次 `YOLO26s` 的全量 probe：
+
+- 配置：`train_probe_full_yolo26s.yaml`
+- 关键参数：`imgsz=960`、`batch=8`、`epochs=1`、`fraction=0.02`
+- 输出目录：`vision_uav/runs/train/anti_uav_rgb_yolo26s_probe_full/`
+- 权重文件：`best.pt`、`last.pt`
+- 验证指标：
+  - `precision = 0.497`
+  - `recall = 0.435`
+  - `mAP50 = 0.303`
+  - `mAP50-95 = 0.0958`
+- probe 总耗时：约 `217.1s`
+
+## 当前结论
+
+虽然 `YOLO26s` probe 本身可以启动并跑完，但按当前 `RTX 4070 Laptop GPU 8GB + Anti-UAV300` 的真实探测结果估算：
+
+- `train_full_yolo26s_nightly_b8.yaml` 约 `90.46` 小时
+- `train_full_yolo26s_nightly_b4.yaml` 约 `144.74` 小时
+
+这已经明显超出“一夜内完成正式基线训练”的预算，所以本轮没有盲目启动正式 `YOLO26s` 夜训。当前 `run_formal_pipeline.py --phase full` 已实现并验证：它会先做 probe，再在预算超限时自动中止，而不是继续进入正式训练。
+
+当前代码层面已经把正式 pipeline、自动 probe、test 评估、3 段视频推理和 ONNX 导出都实现好了，但在继续正式训练前，需要先把正式模型或正式参数压缩到真实可跑的范围。

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import onnxruntime as ort
@@ -18,6 +19,8 @@ def parse_args() -> argparse.Namespace:
         help="Path to the ONNX export YAML config.",
     )
     parser.add_argument("--weights", default=None, help="Optional explicit weights override.")
+    parser.add_argument("--project", default=None, help="Optional explicit export project override.")
+    parser.add_argument("--name", default=None, help="Optional explicit export name override.")
     return parser.parse_args()
 
 
@@ -30,12 +33,18 @@ def validate_export(onnx_path: Path, imgsz: int) -> None:
     print(f"onnx_outputs={len(outputs)}")
 
 
-def main() -> int:
-    args = parse_args()
-    config = load_yaml(resolve_workspace_path(args.config))
-    weights_path = str(resolve_workspace_path(args.weights or str(config["weights"])))
+def run_export(
+    config_path: str | Path,
+    weights_override: str | None = None,
+    project_override: str | None = None,
+    name_override: str | None = None,
+) -> dict[str, Any]:
+    config = load_yaml(resolve_workspace_path(config_path))
+    weights_path = str(resolve_workspace_path(weights_override or str(config["weights"])))
     fallback_model = config.get("fallback_model")
-    output_root = ensure_dir(resolve_workspace_path(str(config["project"]))) / str(config["name"])
+    project_value = project_override or str(config["project"])
+    name_value = name_override or str(config["name"])
+    output_root = ensure_dir(resolve_workspace_path(project_value)) / name_value
     ensure_dir(output_root)
     imgsz = int(config.get("imgsz", 1280))
 
@@ -51,7 +60,18 @@ def main() -> int:
     )
     onnx_path = Path(exported)
     validate_export(onnx_path, imgsz)
-    print(f"onnx_path={onnx_path}")
+    return {"config": config, "onnx_path": onnx_path, "output_root": output_root}
+
+
+def main() -> int:
+    args = parse_args()
+    result = run_export(
+        args.config,
+        weights_override=args.weights,
+        project_override=args.project,
+        name_override=args.name,
+    )
+    print(f"onnx_path={result['onnx_path']}")
     return 0
 
 
