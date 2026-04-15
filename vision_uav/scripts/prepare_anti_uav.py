@@ -24,6 +24,7 @@ class SequenceSpec:
     directory: Path
     video_path: Path
     label_path: Path
+    split: str | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,44 +43,69 @@ def discover_sequences(
     rgb_label_name: str,
     include_prefixes: list[str],
     exclude_prefixes: list[str],
+    use_existing_splits: bool,
     max_sequences: int | None,
+    max_sequences_per_split: dict[str, int] | None,
 ) -> list[SequenceSpec]:
     sequences: list[SequenceSpec] = []
-    for child in sorted(source_root.iterdir()):
-        if not child.is_dir():
-            continue
-        if include_prefixes and not any(child.name.startswith(prefix) for prefix in include_prefixes):
-            continue
-        if exclude_prefixes and any(child.name.startswith(prefix) for prefix in exclude_prefixes):
-            continue
+    if use_existing_splits:
+        per_split_counts: dict[str, int] = defaultdict(int)
+        for split_dir in sorted(source_root.iterdir()):
+            if not split_dir.is_dir() or split_dir.name not in {"train", "val", "test"}:
+                continue
+            split = split_dir.name
+            for child in sorted(split_dir.iterdir()):
+                if not child.is_dir():
+                    continue
+                if include_prefixes and not any(child.name.startswith(prefix) for prefix in include_prefixes):
+                    continue
+                if exclude_prefixes and any(child.name.startswith(prefix) for prefix in exclude_prefixes):
+                    continue
+                if max_sequences_per_split and split in max_sequences_per_split:
+                    if per_split_counts[split] >= int(max_sequences_per_split[split]):
+                        continue
+                video_path = child / rgb_video_name
+                label_path = child / rgb_label_name
+                if not video_path.exists() or not label_path.exists():
+                    continue
+                sequences.append(SequenceSpec(child.name, child, video_path, label_path, split=split))
+                per_split_counts[split] += 1
+    else:
+        for child in sorted(source_root.iterdir()):
+            if not child.is_dir():
+                continue
+            if include_prefixes and not any(child.name.startswith(prefix) for prefix in include_prefixes):
+                continue
+            if exclude_prefixes and any(child.name.startswith(prefix) for prefix in exclude_prefixes):
+                continue
 
-        video_path = child / rgb_video_name
-        if not video_path.exists():
-            alternatives = sorted(
-                [
-                    file
-                    for file in child.iterdir()
-                    if file.is_file() and file.suffix.lower() in VALID_VIDEO_SUFFIXES and file.stem.lower() == "rgb"
-                ]
-            )
-            if alternatives:
-                video_path = alternatives[0]
+            video_path = child / rgb_video_name
+            if not video_path.exists():
+                alternatives = sorted(
+                    [
+                        file
+                        for file in child.iterdir()
+                        if file.is_file() and file.suffix.lower() in VALID_VIDEO_SUFFIXES and file.stem.lower() == "rgb"
+                    ]
+                )
+                if alternatives:
+                    video_path = alternatives[0]
 
-        label_path = child / rgb_label_name
-        if not label_path.exists():
-            alternatives = sorted(
-                [
-                    file
-                    for file in child.iterdir()
-                    if file.is_file() and file.name.lower() == rgb_label_name.lower()
-                ]
-            )
-            if alternatives:
-                label_path = alternatives[0]
+            label_path = child / rgb_label_name
+            if not label_path.exists():
+                alternatives = sorted(
+                    [
+                        file
+                        for file in child.iterdir()
+                        if file.is_file() and file.name.lower() == rgb_label_name.lower()
+                    ]
+                )
+                if alternatives:
+                    label_path = alternatives[0]
 
-        if not video_path.exists() or not label_path.exists():
-            continue
-        sequences.append(SequenceSpec(child.name, child, video_path, label_path))
+            if not video_path.exists() or not label_path.exists():
+                continue
+            sequences.append(SequenceSpec(child.name, child, video_path, label_path))
     if max_sequences is not None and max_sequences > 0:
         return sequences[:max_sequences]
     return sequences
@@ -170,7 +196,7 @@ def convert_sequences(
         ensure_dir(labels_root / split)
 
     for sequence in tqdm(sequences, desc="Converting Anti-UAV RGB sequences"):
-        split = split_map[sequence.name]
+        split = sequence.split or split_map[sequence.name]
         stride = max(1, int(frame_stride.get(split, 1)))
         annotations = load_annotations(sequence.label_path)
 
@@ -253,19 +279,26 @@ def main() -> int:
 
     filters = config.get("sequence_filters", {})
     paths = config.get("paths", {})
+    use_existing_splits = bool(config.get("use_existing_splits", False))
+    max_sequences_per_split = config.get("max_sequences_per_split")
     sequences = discover_sequences(
         source_root=source_root,
         rgb_video_name=str(paths.get("rgb_video_name", "RGB.mp4")),
         rgb_label_name=str(paths.get("rgb_label_name", "RGB_label.json")),
         include_prefixes=list(filters.get("include_prefixes", [])),
         exclude_prefixes=list(filters.get("exclude_prefixes", [])),
+        use_existing_splits=use_existing_splits,
         max_sequences=int(config["max_sequences"]) if config.get("max_sequences") is not None else None,
+        max_sequences_per_split=dict(max_sequences_per_split) if max_sequences_per_split is not None else None,
     )
-    split_map = allocate_splits(
-        [sequence.name for sequence in sequences],
-        ratios=dict(config.get("split_ratios", {})),
-        seed=int(config.get("seed", 20260415)),
-    )
+    if use_existing_splits:
+        split_map = {sequence.name: sequence.split or "train" for sequence in sequences}
+    else:
+        split_map = allocate_splits(
+            [sequence.name for sequence in sequences],
+            ratios=dict(config.get("split_ratios", {})),
+            seed=int(config.get("seed", 20260415)),
+        )
     result = convert_sequences(
         sequences=sequences,
         split_map=split_map,
