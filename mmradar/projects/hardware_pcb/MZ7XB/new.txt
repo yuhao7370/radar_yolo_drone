@@ -1,0 +1,12 @@
+Board Information Report
+Filename     : D:\PCB\MZ7XB_Fun20191012\new.PcbDoc
+Date         : 2022/3/24
+Time         : 11:51:21
+Time Elapsed : 00:00:00
+
+Routing Information
+    Routing completion, 100.00%
+    Connections, 374
+    Connections routed, 374
+    Connections remaining, 0
+count : 4

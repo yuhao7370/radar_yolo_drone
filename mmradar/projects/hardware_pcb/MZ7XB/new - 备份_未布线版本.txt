@@ -1,0 +1,12 @@
+Board Information Report
+Filename     : C:\Users\Admin\Desktop\MZ7XB\new - 备份_未布线版本.PcbDoc
+Date         : 2024/9/27
+Time         : 16:07:42
+Time Elapsed : 00:00:00
+
+Routing Information
+    Routing completion, 100.00%
+    Connections, 352
+    Connections routed, 352
+    Connections remaining, 0
+count : 4

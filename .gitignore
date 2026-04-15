@@ -1,0 +1,69 @@
+# Windows / editor temp files
+Thumbs.db
+Desktop.ini
+*.tmp
+__pycache__/
+*.pyc
+
+# Archives and large raw samples
+mmradar/archives/
+mmradar/resources/data/sar_*.bin
+mmradar/resources/data/clean.bin
+
+# Qt local build outputs
+mmradar/projects/host_qt/sar_tcp/build/
+*.pro.user
+*.pro.user.*
+
+# Vivado generated caches and logs
+mmradar/projects/fpga_pspl/Miz_sys/.venv/
+mmradar/projects/fpga_pspl/Miz_sys/.Xil/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.cache/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.ip_user_files/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.runs/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sim/
+mmradar/projects/fpga_pspl/Miz_sys/Packages/
+mmradar/projects/fpga_pspl/Miz_sys/vivado*.log
+mmradar/projects/fpga_pspl/Miz_sys/vivado*.jou
+mmradar/projects/fpga_pspl/Miz_sys/ip_upgrade.log
+mmradar/projects/fpga_pspl/Miz_sys/min_area_pfile.tmp
+
+# Keep only the manually maintained SDK source
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sdk/*
+!mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sdk/PL2PS_DMA_Test/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sdk/PL2PS_DMA_Test/*
+!mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sdk/PL2PS_DMA_Test/src/
+!mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.sdk/PL2PS_DMA_Test/src/**
+
+# Keep only the target hardware PCB project
+mmradar/projects/hardware_pcb/*
+!mmradar/projects/hardware_pcb/MZ7XB/
+!mmradar/projects/hardware_pcb/MZ7XB/**
+mmradar/projects/hardware_pcb/MZ7XB/**/History/
+mmradar/projects/hardware_pcb/MZ7XB/__Previews/
+mmradar/projects/hardware_pcb/MZ7XB/*.PcbDoc.htm
+mmradar/projects/hardware_pcb/MZ7XB/*.html
+mmradar/projects/hardware_pcb/MZ7XB/History/
+mmradar/projects/hardware_pcb/MZ7XB/Project Logs for MZ7XB_Fun/
+mmradar/projects/hardware_pcb/MZ7XB/Project Outputs for ZED/
+
+# Hardware manager session artifacts
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/backup/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/**/wave/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/**/layout/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/**/*.wdb
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/**/*.wcfg
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.hw/**/*.layout
+
+# Derived Vivado sources inside Miz_sys.srcs
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/sim/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/simulation/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/synth/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/ipshared/
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*.dcp
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_sim_netlist.v
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_sim_netlist.vhdl
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_stub.v
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_stub.vhdl
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*.protoinst
+mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*.hwdef
