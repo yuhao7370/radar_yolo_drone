@@ -1,0 +1,6 @@
+distant_bird_manifest: vision_uav/data/processed/hard_negative_suites/bird_eval_public/images/manifest.json
+fbd_sv_val_dir: vision_uav/data/raw/hard_negatives/fbd_sv_2024/videos/val
+output_root: vision_uav/data/processed/hard_negative_suites/bird_eval_public
+fbd_sv_target_images: 240
+frame_stride: 20
+max_frames_per_video: 30
