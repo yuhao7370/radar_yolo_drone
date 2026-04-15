@@ -1,0 +1,20 @@
+source_root: vision_uav/data/raw/anti_uav/Anti-UAV300
+output_root: vision_uav/data/processed/anti_uav_rgb_detect_smoke
+dataset_yaml_name: anti_uav_rgb_detect_smoke.yaml
+seed: 20260415
+max_sequences: 12
+split_ratios:
+  train: 0.75
+  val: 0.125
+  test: 0.125
+frame_stride:
+  train: 8
+  val: 12
+  test: 12
+sequence_filters:
+  include_prefixes: []
+  exclude_prefixes: []
+paths:
+  rgb_video_name: RGB.mp4
+  rgb_label_name: RGB_label.json
+class_name: uav

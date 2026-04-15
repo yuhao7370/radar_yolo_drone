@@ -1,0 +1,4 @@
+url: https://huggingface.co/datasets/VoyageWang/antiuav/resolve/main/Anti-UAV300.zip?download=true
+zip_path: vision_uav/data/raw/anti_uav/Anti-UAV300.zip
+extract_root: vision_uav/data/raw/anti_uav
+expected_size: 7937237349

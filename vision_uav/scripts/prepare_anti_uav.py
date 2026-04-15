@@ -42,6 +42,7 @@ def discover_sequences(
     rgb_label_name: str,
     include_prefixes: list[str],
     exclude_prefixes: list[str],
+    max_sequences: int | None,
 ) -> list[SequenceSpec]:
     sequences: list[SequenceSpec] = []
     for child in sorted(source_root.iterdir()):
@@ -79,6 +80,8 @@ def discover_sequences(
         if not video_path.exists() or not label_path.exists():
             continue
         sequences.append(SequenceSpec(child.name, child, video_path, label_path))
+    if max_sequences is not None and max_sequences > 0:
+        return sequences[:max_sequences]
     return sequences
 
 
@@ -256,6 +259,7 @@ def main() -> int:
         rgb_label_name=str(paths.get("rgb_label_name", "RGB_label.json")),
         include_prefixes=list(filters.get("include_prefixes", [])),
         exclude_prefixes=list(filters.get("exclude_prefixes", [])),
+        max_sequences=int(config["max_sequences"]) if config.get("max_sequences") is not None else None,
     )
     split_map = allocate_splits(
         [sequence.name for sequence in sequences],

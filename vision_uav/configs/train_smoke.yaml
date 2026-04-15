@@ -1,13 +1,13 @@
 task: detect
 model: yolo26n.pt
 fallback_model: yolo11n.pt
-data: vision_uav/data/processed/anti_uav_rgb_detect/anti_uav_rgb_detect.yaml
+data: vision_uav/data/processed/anti_uav_rgb_detect_smoke/anti_uav_rgb_detect_smoke.yaml
 project: vision_uav/runs/train
 name: anti_uav_rgb_yolo26n_smoke
 device: 0
 imgsz: 640
 epochs: 1
-batch: 2
+batch: 8
 workers: 4
 pretrained: true
 cache: false
