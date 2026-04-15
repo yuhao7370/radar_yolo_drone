@@ -314,3 +314,36 @@
 
 - `vision_uav/runs/hard_negatives/anti_uav_rgb_yolo26s_a800_b643_threshold_sweep/`
 - `vision_uav/runs/hard_negatives/anti_uav_rgb_yolo26s_a800_b643_bird_threshold_sweep/`
+
+## 9 第二轮多源 hard negative 优化结果
+
+在第一轮阈值优化完成后，项目又开展了第二轮更贴近场景的公开 hard negative 扩展，新增了三类来源：
+
+- `Distant Bird Detection` 公开子集
+- `Anti-UAV300` 空标签纯天空帧
+- `Anti-UAV300` 空标签复杂背景帧
+
+并在此基础上做了两件事：
+
+1. 重新构建 `bird_eval_public / sky_eval / clutter_eval` 三套评估集；
+2. 通过误检挖掘生成 `hn_v2`，再在 A800 上继续微调 `YOLO26s`。
+
+这一轮的结果很有代表性：
+
+- hard negative 侧误检进一步下降，说明多源负样本补充方向本身是对的；
+- 但真正能被当前 detector 误报出来的高价值负样本只有 `66` 张，数量远低于最初设想；
+- 在这 `66` 张样本上继续微调后，`Anti-UAV test recall` 最好也只有 `0.844`，`test mAP50-95` 最好只有 `0.480`，都明显低于当前正式基线。
+
+因此，这轮优化的工程结论不是“得到一版更好的 detector”，而是更重要的一点：
+
+> 当前单阶段 detector 在公开 hard negative 上继续做数据型微调，已经开始进入“误检继续下降，但主任务召回明显受损”的区间。
+
+从系统设计角度看，这实际上给出了下一轮更清晰的路线：
+
+- 保留当前原始正式基线作为部署候选；
+- 不再继续机械堆同类补训；
+- 下一轮应转向 `bird rejector` 两阶段方案。
+
+第二轮的完整细节见：
+
+- `vision_uav/docs/HARD_NEGATIVE_ROUND2.md`

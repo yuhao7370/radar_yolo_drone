@@ -155,3 +155,35 @@
 - 模型：`vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt`
 - 推荐阈值：`0.45`
 - 对应结果目录：`vision_uav/runs/hard_negatives/anti_uav_rgb_yolo26s_a800_b643_bird_threshold_sweep/`
+
+## 第二轮多源 hard negative 结论（2026-04-16）
+
+在引入 `Distant Bird Detection`、重新拆分 `pure_sky / clutter_background`，并在 A800 上对 `hn_v2` 做了第二轮补训之后，本轮结论需要更新：
+
+1. 多源公开 hard negative 评估侧确实继续改善了误检。
+   - `bird_eval_public` 在 `0.35` 下帧级误检率约为 `0.00595`
+   - `sky_eval` 与 `clutter_eval` 在本轮评估中均为 `0`
+2. 但 `hn_v2` 误检挖掘的实际高价值样本非常少。
+   - `bird = 59`
+   - `pure_sky = 5`
+   - `clutter = 2`
+   - 合计只有 `66`
+3. 基于这 `66` 个样本继续微调 detector，会明显伤主任务。
+   - `Anti-UAV test recall` 最好也只有 `0.844`
+   - `test mAP50-95` 最好也只有 `0.480`
+   - 都不满足本轮验收线
+4. 因此本轮最终结论不是“推荐新的阈值”，而是：
+   - `selected_threshold_v2 = null`
+   - 当前 round2 不应替换掉原始正式基线
+   - 下一轮应转入 `bird rejector` 两阶段方案，而不是继续堆单阶段 detector 微调
+
+这意味着当前最稳的工程选择仍然是：
+
+- 继续保留 `vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt`
+- 继续沿用 `confidence = 0.45` 作为当前正式离线推理阈值
+- 把第二轮结果当作“验证单阶段数据型优化边界”的证据
+
+第二轮的完整记录见：
+
+- `vision_uav/docs/HARD_NEGATIVE_ROUND2.md`
+- `vision_uav/runs/hard_negative_round2/posttrain_hn_v2/hard_negative_round2_summary.json`
