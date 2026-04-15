@@ -1,0 +1,8 @@
+weights: vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt
+fallback_model: yolo11s.pt
+project: vision_uav/runs/export
+name: anti_uav_rgb_yolo26s_a800_b643_onnx
+imgsz: 960
+dynamic: false
+simplify: true
+device: 0
