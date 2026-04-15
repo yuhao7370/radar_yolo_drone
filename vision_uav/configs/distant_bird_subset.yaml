@@ -1,0 +1,10 @@
+annotations_file_id: 1P-yM34AjsRXFDyOzGW7MbJnpuP3f3IKy
+images_folder_url: https://drive.google.com/drive/folders/11H30-Oh_Ybi_LzsRot2soHaNp2ZWlt4i?usp=share_link
+raw_output_root: vision_uav/data/raw/hard_negatives/distant_bird_detection
+processed_output_root: vision_uav/data/processed/hard_negative_suites
+train_target_images: 1500
+val_target_images: 300
+min_train_folders: 3
+min_val_folders: 1
+train_pool_name: bird_public_train_pool
+eval_suite_name: bird_eval_public

@@ -1,0 +1,24 @@
+source_root: vision_uav/data/processed/anti_uav_rgb_detect
+raw_output_root: vision_uav/data/raw/hard_negatives
+processed_output_root: vision_uav/data/processed/hard_negative_suites
+pool_splits:
+  - train
+  - val
+  - test
+eval_splits:
+  - val
+  - test
+pure_sky_ratio_min: 0.80
+pure_sky_edge_density_max: 0.03
+clutter_sky_ratio_max: 0.80
+clutter_edge_density_min: 0.05
+canny_low_threshold: 80
+canny_high_threshold: 180
+gaussian_blur_kernel: 9
+edge_dilate_kernel: 11
+sky_eval_target_images: 400
+clutter_eval_target_images: 400
+pure_sky_pool_name: pure_sky_pool
+clutter_pool_name: clutter_background_pool
+sky_eval_suite_name: sky_eval
+clutter_eval_suite_name: clutter_eval
