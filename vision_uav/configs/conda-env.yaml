@@ -1,0 +1,24 @@
+name: vision-uav
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - torch
+      - torchvision
+      - torchaudio
+      - --index-url https://download.pytorch.org/whl/cu124
+      - ultralytics>=8.3.0
+      - opencv-python>=4.10
+      - onnx>=1.18
+      - onnxruntime-gpu>=1.18
+      - pyyaml>=6.0
+      - numpy>=1.26
+      - pandas>=2.2
+      - tqdm>=4.66
+      - matplotlib>=3.9
+      - pillow>=10.4
+      - scipy>=1.14

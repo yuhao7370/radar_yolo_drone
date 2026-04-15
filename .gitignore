@@ -67,3 +67,12 @@ mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_stub.v
 mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*_stub.vhdl
 mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*.protoinst
 mmradar/projects/fpga_pspl/Miz_sys/Miz_sys.srcs/**/*.hwdef
+
+# Independent vision workspace artifacts
+vision_uav/data/
+vision_uav/runs/
+vision_uav/weights/
+vision_uav/cache/
+vision_uav/.pytest_cache/
+vision_uav/.mypy_cache/
+vision_uav/.ruff_cache/
