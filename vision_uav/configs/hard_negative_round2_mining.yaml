@@ -1,0 +1,32 @@
+weights: vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt
+fallback_model: yolo11s.pt
+imgsz: 960
+device: 0
+conf: 0.20
+video_min_gap_frames: 15
+image_hash_hamming_threshold: 0
+project: vision_uav/data/processed/hard_negative_mined
+name: round2
+sources:
+  - source_name: bird_public_train_pool
+    category: bird
+    source_type: image_dir
+    source: vision_uav/data/processed/hard_negative_suites/bird_public_train_pool/images
+  - source_name: fbd_sv_train_videos
+    category: bird
+    source_type: video_dir
+    source: vision_uav/data/raw/hard_negatives/fbd_sv_2024/videos/train
+  - source_name: pure_sky_pool
+    category: pure_sky
+    source_type: image_dir
+    source: vision_uav/data/raw/hard_negatives/pure_sky_pool/images
+  - source_name: clutter_background_pool
+    category: clutter
+    source_type: image_dir
+    source: vision_uav/data/raw/hard_negatives/clutter_background_pool/images
+quotas:
+  bird: 2500
+  pure_sky: 1000
+  clutter: 1500
+base_dataset_root: vision_uav/data/processed/anti_uav_rgb_detect
+hn_v2_output_root: vision_uav/data/processed/anti_uav_rgb_detect_hn_v2
