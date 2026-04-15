@@ -53,10 +53,14 @@ def ensure_junction(alias: Path, target: Path) -> Path:
 
 
 def workspace_root_alias() -> Path:
+    if os.name != "nt":
+        return workspace_root()
     return ensure_junction(WORKSPACE_ALIAS, workspace_root())
 
 
 def data_root_alias() -> Path:
+    if os.name != "nt":
+        return workspace_root() / "data"
     return ensure_junction(DATA_ALIAS, workspace_root() / "data")
 
 
