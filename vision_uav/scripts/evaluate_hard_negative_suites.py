@@ -37,7 +37,17 @@ def image_dir_from_manifest(manifest_path: Path, manifest: dict[str, Any]) -> Pa
     raw_dir = manifest.get("images_dir") or manifest.get("output_dir")
     if raw_dir is None:
         raise KeyError(f"Manifest does not define images_dir/output_dir: {manifest_path}")
-    return Path(str(raw_dir))
+    raw_dir_str = str(raw_dir)
+    fallback_dir = manifest_path.parent / "images"
+    if ":\\" in raw_dir_str or ":/" in raw_dir_str:
+        if fallback_dir.exists():
+            return fallback_dir
+    image_dir = Path(str(raw_dir))
+    if image_dir.exists():
+        return image_dir
+    if fallback_dir.exists():
+        return fallback_dir
+    raise FileNotFoundError(f"Cannot resolve suite image directory from manifest: {manifest_path}")
 
 
 def run_suite_threshold(

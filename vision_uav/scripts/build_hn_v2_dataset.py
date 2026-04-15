@@ -28,9 +28,10 @@ def main() -> int:
     base_dataset_root = resolve_workspace_path(config["base_dataset_root"])
     mining_root = resolve_workspace_path(config["project"]) / str(config["name"])
     output_root = ensure_dir(resolve_workspace_path(config["hn_v2_output_root"]))
+    processed_root = base_dataset_root.parent
 
     train_images = sorted((base_dataset_root / "images" / "train").glob("*"))
-    train_lines = [f"../anti_uav_rgb_detect/images/train/{path.name}" for path in train_images if path.is_file()]
+    train_lines = [str(path) for path in train_images if path.is_file()]
 
     selected_total = 0
     selected_by_category: dict[str, int] = {}
@@ -41,22 +42,26 @@ def main() -> int:
         label_dir = ensure_dir(output_root / "labels" / category)
         selected_by_category[category] = len(rows)
         for row in rows:
-            source_path = Path(row["saved_path"])
+            saved_path_str = str(row["saved_path"])
+            source_path = Path(saved_path_str)
+            if not source_path.exists():
+                source_name = saved_path_str.replace("\\", "/").split("/")[-1]
+                source_path = mining_root / category / source_name
             destination = category_dir / source_path.name
             if not destination.exists():
                 destination.write_bytes(source_path.read_bytes())
             (label_dir / f"{destination.stem}.txt").write_text("", encoding="utf-8")
-            train_lines.append(f"images/{category}/{destination.name}")
+            train_lines.append(str(destination))
         selected_total += len(rows)
 
     train_list_path = output_root / "train_hn_v2.txt"
     train_list_path.write_text("\n".join(train_lines) + "\n", encoding="utf-8")
 
     dataset_yaml = {
-        "path": ".",
-        "train": "train_hn_v2.txt",
-        "val": "../anti_uav_rgb_detect/images/val",
-        "test": "../anti_uav_rgb_detect/images/test",
+        "path": str(processed_root),
+        "train": "anti_uav_rgb_detect_hn_v2/train_hn_v2.txt",
+        "val": "anti_uav_rgb_detect/images/val",
+        "test": "anti_uav_rgb_detect/images/test",
         "names": {0: "uav"},
     }
     yaml_path = output_root / "anti_uav_rgb_detect_hn_v2.yaml"
