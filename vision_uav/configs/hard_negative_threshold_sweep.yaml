@@ -1,0 +1,26 @@
+weights: vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt
+fallback_model: yolo11s.pt
+project: vision_uav/runs/hard_negatives
+name: anti_uav_rgb_yolo26s_a800_b643_threshold_sweep
+device: 0
+imgsz: 960
+fps: 10.0
+thresholds:
+  - 0.20
+  - 0.25
+  - 0.30
+  - 0.35
+  - 0.40
+  - 0.45
+  - 0.50
+target_frame_false_positive_rate: 0.05
+max_recall_drop: 0.03
+baseline_val_recall: 0.978
+baseline_test_recall: 0.900
+val_eval_config: vision_uav/configs/eval_a800_val_yolo26s.yaml
+test_eval_config: vision_uav/configs/eval_a800_test_yolo26s.yaml
+sources:
+  - source: vision_uav/data/raw/hard_negatives/anti_uav_background_only/val
+    source_id: anti_uav_background_val
+  - source: vision_uav/data/raw/hard_negatives/anti_uav_background_only/test
+    source_id: anti_uav_background_test
