@@ -1,5 +1,8 @@
 #include "sar_bp_1d.h"
 
+#include <QDir>
+#include <QFileInfo>
+
 sar_bp_1d::sar_bp_1d()
 {
     m_x=0;
@@ -18,7 +21,7 @@ sar_bp_1d::sar_bp_1d()
     sar_noise_len=0;
     img=NULL;
     sar_high=-1;
-    m_res_name="D:/Desktop/毕设/res.jpg";
+    m_res_name="res.jpg";
     busy=0;
 }
 void sar_bp_1d::set_geo(double x,double y,double w,double h)//单位：米
@@ -145,7 +148,12 @@ void sar_bp_1d::run(void)
         {
             cnt=0;
             static int tmp_cnt=0;
-            res.mirrored(1,1).save(QString("D:/Download/z_%1.jpg").arg(tmp_cnt));
+            const QFileInfo res_info(m_res_name);
+            const QString progress_dir = res_info.absolutePath();
+            if(!progress_dir.isEmpty())
+            {
+                res.mirrored(1,1).save(QDir(progress_dir).filePath(QString("progress_%1.jpg").arg(tmp_cnt)));
+            }
             tmp_cnt++;
         }
         else

@@ -12,6 +12,7 @@ SOURCES += \
     anim_dsg.cpp \
     main.cpp \
     mainwindow.cpp \
+    runtime_config.cpp \
     sar_bp.cpp \
     sar_bp_1d.cpp \
     sar_data_cleaner.cpp
@@ -19,6 +20,7 @@ SOURCES += \
 HEADERS += \
     anim_dsg.h \
     mainwindow.h \
+    runtime_config.h \
     sar_bp.h \
     sar_bp_1d.h \
     sar_data_cleaner.h

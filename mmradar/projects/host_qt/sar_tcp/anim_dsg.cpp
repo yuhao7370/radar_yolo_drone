@@ -46,7 +46,6 @@ QVector<float> anim_dsg::cvt_point(QVector<float> src)
 void anim_dsg::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    //painter.drawImage(0,0,QImage("D:/Desktop/毕设/数据/成像视频实验/矩阵获取与验证/pic_void.jpg").scaledToWidth(this->width()),0,0,this->width(),this->height());
     painter.setPen(QPen(Qt::red,2));
     painter.setBrush(QColor(0,0,0,0));
     painter.drawRect(0,0,this->width(),this->height());

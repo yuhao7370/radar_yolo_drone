@@ -18,11 +18,7 @@
 #include "sar_data_cleaner.h"
 #include "fftw3.h"
 #include "anim_dsg.h"
-
-#define file_path "E:/mmradar/data/"
-#define bp_test_file "E:/mmradar/data/"
-#define sar_noise_clean_file "E:/mmradar/sar_noise_500M.bin"
-//#define sar_noise_clean_file "D:/Desktop/毕设/数据/sar_noise_250M.bin"
+#include "runtime_config.h"
 #define FFT_REAL
 
 
@@ -95,6 +91,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    RuntimeConfig runtime_config;
     int rec_sta;
     int look_sta;
     uint32_t rec_cnt;
@@ -105,7 +102,9 @@ private:
     void file_write(QByteArray dat);
     void file_close(void);
     void set_noise_clean_file(QString file);
+    QString data_file(const QString &file_name) const;
     QString now_file;
+    QString clean_file_path;
     int file_idx;
 
 protected:

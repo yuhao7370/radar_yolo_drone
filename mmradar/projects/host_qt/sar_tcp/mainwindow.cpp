@@ -1,15 +1,23 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QDir>
+#include <QtGlobal>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    runtime_config = RuntimeConfig::load();
+    QDir().mkpath(runtime_config.data_dir);
+    clean_file_path = runtime_config.data_file("clean.bin");
+
     tcpserver=new QTcpServer(this);
     tcpsocket=NULL;
-    tcpserver->listen(QHostAddress::Any,2829);
+    if (!tcpserver->listen(QHostAddress::Any, runtime_config.listen_port)) {
+        qWarning() << "监听端口失败:" << runtime_config.listen_port << tcpserver->errorString();
+    }
     speed_cnt=0;
     connect(this,SIGNAL(get_data(QByteArray)),this,SLOT(getData(QByteArray)));
 
@@ -107,7 +115,8 @@ MainWindow::MainWindow(QWidget *parent)
         sar_data_cleaner1=new sar_data_cleaner;
         connect(sar_data_cleaner1,SIGNAL(clean_finish(QString)),this,SLOT(clean_finish(QString)));
         sar_bp_1d_1=new sar_bp_1d();
-        sar_bp_1d_1->set_file(QString(file_path)+"clean.bin");
+        sar_bp_1d_1->set_file(clean_file_path);
+        sar_bp_1d_1->set_res_name(data_file("res.jpg"));
 
         connect(sar_bp_1d_1,SIGNAL(get_img(QImage,QImage)),this,SLOT(get_img(QImage,QImage)));
         mean=0;
@@ -115,8 +124,16 @@ MainWindow::MainWindow(QWidget *parent)
         sar_noise=NULL;
         sar_noise_len=0;
 
-        set_noise_clean_file(sar_noise_clean_file);
+        set_noise_clean_file(runtime_config.noise_file);
 
+        ui->lineEdit->setText(QString::number(runtime_config.target_size_kb));
+        ui->horizontalSlider->setValue(
+            qBound(
+                ui->horizontalSlider->minimum(),
+                qRound(runtime_config.contrast_level),
+                ui->horizontalSlider->maximum()
+            )
+        );
 
         now_trip[0]=(double*)fftw_malloc(sizeof(double) * sar_look_num);
         now_trip[1]=(double*)fftw_malloc(sizeof(double) * sar_look_num);
@@ -134,15 +151,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 
         file_idx=0;
-        now_file=QString(file_path)+QString("sar_1.bin");
+        now_file=data_file("sar_1.bin");
 
 
 //        for(int i=1;i<=31;i++)
 //        {
 //            qDebug()<<"正在处理文件"<<QString("sar_%1.bin").arg(i);
-//            QString tmp_file="D:/Desktop/毕设/数据/最终/"+QString("sar_%1.bin").arg(i);
+//            QString tmp_file=data_file(QString("sar_%1.bin").arg(i));
 //            sar_data_cleaner1->set_input_file(tmp_file);
-//            sar_data_cleaner1->set_output_file(QString(file_path)+"clean.bin");
+//            sar_data_cleaner1->set_output_file(clean_file_path);
 //            sar_data_cleaner1->start();
 //            sar_data_cleaner1->busy=1;
 //            while(sar_data_cleaner1->busy)
@@ -154,14 +171,14 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 //            qDebug()<<QString("sar_%1.bin").arg(i)<<"清洗完成，正在成像";
-//            sar_bp_1d_1->set_res_name("D:/Desktop/毕设/数据/最终/"+QString("res_%1.jpg").arg(i));
-//            sar_bp_1d_1->set_noise_clean_file(sar_noise_clean_file);
+//            sar_bp_1d_1->set_res_name(data_file(QString("res_%1.jpg").arg(i)));
+//            sar_bp_1d_1->set_noise_clean_file(runtime_config.noise_file);
 //            sar_bp_1d_1->set_dir(0);
-//            sar_bp_1d_1->set_geo(-2,2.5,5,8);
-//            sar_bp_1d_1->set_grid(500,800);
-//            sar_bp_1d_1->set_sar_high(0.872);
-//            sar_bp_1d_1->set_file(QString(file_path)+"clean.bin");
-//            sar_bp_1d_1->set_speed(0.12);
+//            sar_bp_1d_1->set_geo(runtime_config.img_x, runtime_config.img_y, runtime_config.img_w, runtime_config.img_h);
+//            sar_bp_1d_1->set_grid(runtime_config.grid_x, runtime_config.grid_y);
+//            sar_bp_1d_1->set_sar_high(runtime_config.sar_height);
+//            sar_bp_1d_1->set_file(clean_file_path);
+//            sar_bp_1d_1->set_speed(runtime_config.speed);
 //            sar_bp_1d_1->busy=1;
 //            sar_bp_1d_1->start();
 //            while(sar_bp_1d_1->busy)
@@ -501,10 +518,9 @@ void MainWindow::on_btn_start_clicked()
 void MainWindow::file_open(void)
 {
     file_idx++;
-    now_file=QString(file_path)+QString("sar_%1.bin").arg(file_idx);
+    now_file=data_file(QString("sar_%1.bin").arg(file_idx));
     ui->file_idx->setText(QString("上一个文件：%1").arg(file_idx));
     sar_file=new QFile(now_file);
-    //sar_file=new QFile(QString(file_path)+QString("sar.bin"));
 
     sar_file->open(QIODevice::WriteOnly | QIODevice::Truncate);
 
@@ -550,7 +566,7 @@ void MainWindow::on_bp_start_clicked()
 {
     if(now_file=="")return;
     sar_data_cleaner1->set_input_file(now_file);
-    sar_data_cleaner1->set_output_file(QString(file_path)+"clean.bin");
+    sar_data_cleaner1->set_output_file(clean_file_path);
     sar_data_cleaner1->start();
 
 }
@@ -561,17 +577,13 @@ void MainWindow::clean_finish(QString file_name)
 
 void MainWindow::on_img_start_clicked()
 {
-    sar_bp_1d_1->set_noise_clean_file(sar_noise_clean_file);
+    sar_bp_1d_1->set_noise_clean_file(runtime_config.noise_file);
     sar_bp_1d_1->set_dir(0);
-    sar_bp_1d_1->set_geo(-2,2.5,5,8);
-    sar_bp_1d_1->set_grid(500,800);
-    sar_bp_1d_1->set_sar_high(0.872);
+    sar_bp_1d_1->set_geo(runtime_config.img_x, runtime_config.img_y, runtime_config.img_w, runtime_config.img_h);
+    sar_bp_1d_1->set_grid(runtime_config.grid_x, runtime_config.grid_y);
+    sar_bp_1d_1->set_sar_high(runtime_config.sar_height);
 
-//    sar_bp_1d_1->set_geo(-14.4,3,20,30);
-//    sar_bp_1d_1->set_grid(800,1200);
-//    sar_bp_1d_1->set_sar_high(7.2);
-
-    sar_bp_1d_1->set_speed(0.12);
+    sar_bp_1d_1->set_speed(runtime_config.speed);
     sar_bp_1d_1->start();
 }
 void MainWindow::get_img(QImage res,QImage dist_img)
@@ -608,6 +620,11 @@ void MainWindow::set_noise_clean_file(QString file)
     in_file->close();
     sar_noise_len=trip_len;
     qDebug("获取噪声完成");
+}
+
+QString MainWindow::data_file(const QString &file_name) const
+{
+    return runtime_config.data_file(file_name);
 }
 
 void MainWindow::on_file_idx_clicked()
