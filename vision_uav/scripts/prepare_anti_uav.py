@@ -177,10 +177,20 @@ def normalize_bbox(raw_bbox: list[float], width: int, height: int) -> str | None
     return f"0 {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}\n"
 
 
+def write_image_unicode_safe(image_path: Path, frame) -> None:
+    suffix = image_path.suffix.lower()
+    extension = ".jpg" if suffix not in {".jpg", ".jpeg", ".png", ".bmp"} else suffix
+    success, encoded = cv2.imencode(extension, frame)
+    if not success:
+        raise RuntimeError(f"Failed to encode frame for output: {image_path}")
+    encoded.tofile(str(image_path))
+
+
 def convert_sequences(
     sequences: list[SequenceSpec],
     split_map: dict[str, str],
     output_root: Path,
+    dataset_path_alias: str | None,
     dataset_yaml_name: str,
     frame_stride: dict[str, int],
     class_name: str,
@@ -223,7 +233,7 @@ def convert_sequences(
             image_path = images_root / split / f"{stem}.jpg"
             label_path = labels_root / split / f"{stem}.txt"
 
-            cv2.imwrite(str(image_path), frame)
+            write_image_unicode_safe(image_path, frame)
             label_text = normalize_bbox(annotations[frame_index], width, height)
             with label_path.open("w", encoding="utf-8", newline="\n") as handle:
                 if label_text is not None:
@@ -258,7 +268,7 @@ def convert_sequences(
         json.dump(stats, handle, indent=2, ensure_ascii=False)
 
     dataset_yaml = {
-        "path": str(output_root),
+        "path": dataset_path_alias or str(output_root),
         "train": "images/train",
         "val": "images/val",
         "test": "images/test",
@@ -303,6 +313,7 @@ def main() -> int:
         sequences=sequences,
         split_map=split_map,
         output_root=output_root,
+        dataset_path_alias=str(config["dataset_path_alias"]) if config.get("dataset_path_alias") else None,
         dataset_yaml_name=str(config.get("dataset_yaml_name", "anti_uav_rgb_detect.yaml")),
         frame_stride=dict(config.get("frame_stride", {})),
         class_name=str(config.get("class_name", "uav")),

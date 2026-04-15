@@ -6,9 +6,8 @@ from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
-from ultralytics import YOLO
 
-from common import ensure_dir, load_yaml, resolve_workspace_path
+from common import ensure_dir, load_yaml, load_yolo_model, resolve_workspace_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,17 +19,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--weights", default=None, help="Optional explicit weights override.")
     return parser.parse_args()
-
-
-def load_model(weights_path: str, fallback_model: str | None) -> YOLO:
-    try:
-        return YOLO(weights_path)
-    except Exception:
-        if fallback_model is None:
-            raise
-        print(f"primary_model_failed={weights_path}")
-        print(f"fallback_model={fallback_model}")
-        return YOLO(fallback_model)
 
 
 def validate_export(onnx_path: Path, imgsz: int) -> None:
@@ -51,7 +39,7 @@ def main() -> int:
     ensure_dir(output_root)
     imgsz = int(config.get("imgsz", 1280))
 
-    model = load_model(weights_path, str(fallback_model) if fallback_model else None)
+    model = load_yolo_model(weights_path, str(fallback_model) if fallback_model else None)
     exported = model.export(
         format="onnx",
         imgsz=imgsz,

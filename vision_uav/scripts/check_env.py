@@ -5,7 +5,7 @@ import argparse
 import importlib
 import sys
 
-
+from common import load_yolo_model
 REQUIRED_MODULES = ["torch", "ultralytics", "cv2", "onnx", "onnxruntime", "yaml"]
 
 
@@ -31,8 +31,6 @@ def main() -> int:
     args = parse_args()
     modules = import_required_modules()
     torch = modules["torch"]
-    from ultralytics import YOLO  # type: ignore
-
     print(f"python={sys.version.split()[0]}")
     print(f"torch={torch.__version__}")
     print(f"cuda_available={torch.cuda.is_available()}")
@@ -40,7 +38,7 @@ def main() -> int:
     if torch.cuda.is_available():
         print(f"cuda_device_name={torch.cuda.get_device_name(0)}")
 
-    model = YOLO(args.smoke_model)
+    model = load_yolo_model(args.smoke_model)
     print(f"smoke_model={args.smoke_model}")
     print(f"model_task={model.task}")
     print("environment_check=ok")

@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Iterable
 
 import cv2
-from ultralytics import YOLO
 
-from common import ensure_dir, load_yaml, resolve_workspace_path
+from common import ensure_dir, load_yaml, load_yolo_model, resolve_workspace_path
 
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
@@ -25,17 +24,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--source", default=None, help="Optional explicit source override.")
     return parser.parse_args()
-
-
-def load_model(model_name: str, fallback_model: str | None) -> YOLO:
-    try:
-        return YOLO(model_name)
-    except Exception:
-        if fallback_model is None:
-            raise
-        print(f"primary_model_failed={model_name}")
-        print(f"fallback_model={fallback_model}")
-        return YOLO(fallback_model)
 
 
 def iter_image_paths(image_dir: Path) -> list[Path]:
@@ -206,7 +194,7 @@ def main() -> int:
     conf = float(config.get("conf", 0.25))
     device = config.get("device", 0)
 
-    model = load_model(model_name, str(fallback_model) if fallback_model else None)
+    model = load_yolo_model(model_name, str(fallback_model) if fallback_model else None)
 
     if source_value.isdigit():
         infer_camera_source(model, int(source_value), output_root, source_id, fps, imgsz, conf, device)

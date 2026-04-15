@@ -1,5 +1,6 @@
 source_root: vision_uav/data/raw/anti_uav/Anti-UAV300
 output_root: vision_uav/data/processed/anti_uav_rgb_detect_smoke
+dataset_path_alias: C:/vision_uav_data/processed/anti_uav_rgb_detect_smoke
 dataset_yaml_name: anti_uav_rgb_detect_smoke.yaml
 seed: 20260415
 max_sequences: null

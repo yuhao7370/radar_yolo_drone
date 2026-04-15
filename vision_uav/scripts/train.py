@@ -5,9 +5,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from ultralytics import YOLO
-
-from common import load_yaml, resolve_workspace_path
+from common import load_yaml, load_yolo_model, resolve_workspace_path
 
 
 RESERVED_KEYS = {"model", "fallback_model", "task"}
@@ -37,24 +35,13 @@ def resolve_train_args(config: dict[str, Any]) -> dict[str, Any]:
     return train_args
 
 
-def load_model(model_name: str, fallback_model: str | None) -> YOLO:
-    try:
-        return YOLO(model_name)
-    except Exception:
-        if fallback_model is None:
-            raise
-        print(f"primary_model_failed={model_name}")
-        print(f"fallback_model={fallback_model}")
-        return YOLO(fallback_model)
-
-
 def main() -> int:
     args = parse_args()
     config = load_yaml(resolve_workspace_path(args.config))
     model_name = args.model or str(config["model"])
     fallback_model = config.get("fallback_model")
 
-    model = load_model(model_name, str(fallback_model) if fallback_model else None)
+    model = load_yolo_model(model_name, str(fallback_model) if fallback_model else None)
     train_args = resolve_train_args(config)
     results = model.train(**train_args)
 

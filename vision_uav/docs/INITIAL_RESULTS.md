@@ -11,6 +11,10 @@
 3. `YOLO26` 训练、评估、离线推理、ONNX 导出入口已落地。
 4. `predictions.jsonl` 的结果契约已固定。
 5. 独立 `conda` 环境 `vision-uav` 已创建完成。
+6. `Anti-UAV300.zip` 已下载并解压到 `vision_uav/data/raw/anti_uav/Anti-UAV300/`。
+7. 冒烟数据集已从真实数据成功生成。
+8. `YOLO26n` 1 epoch 冒烟训练已跑通。
+9. 完整 `Anti-UAV300` 检测数据集已展开为 YOLO detect 目录。
 
 ## 本机环境现状
 
@@ -43,6 +47,40 @@
 
 结论：`vision-uav` 环境已经满足第一阶段的 CUDA 训练和模型加载前提。
 
+## 数据落地结果
+
+- 数据源：Hugging Face 镜像 `Anti-UAV300.zip`
+- 压缩包大小：`7,937,237,349` 字节
+- 解压位置：`vision_uav/data/raw/anti_uav/Anti-UAV300/`
+- 真实目录结构：`train/val/test/<sequence>/visible.mp4 + visible.json`
+- Windows 兼容处理：已创建 `C:\vision_uav_data` junction，供 `Ultralytics` 避开中文路径问题
+- 完整正式数据集转换统计：
+  - `train`：`160` 个序列，`29,924` 帧，`28,470` 个正样本帧，`1,454` 个空标签背景帧
+  - `val`：`67` 个序列，`6,208` 帧，`5,850` 个正样本帧，`358` 个空标签背景帧
+  - `test`：`91` 个序列，`8,547` 帧，`7,992` 个正样本帧，`555` 个空标签背景帧
+
+## 冒烟数据集结果
+
+使用 `vision_uav/configs/anti_uav_prepare_smoke.yaml` 从真实数据生成：
+
+- `train`：`8` 个序列，`988` 帧，`949` 个正样本帧，`39` 个空标签背景帧
+- `val`：`2` 个序列，`168` 帧，`168` 个正样本帧
+- `test`：`2` 个序列，`113` 帧，`95` 个正样本帧，`18` 个空标签背景帧
+
+## 冒烟训练结果
+
+使用 `YOLO26n`、`imgsz=640`、`batch=8`、`epochs=1` 在 CUDA 环境上完成训练：
+
+- 训练输出目录：`vision_uav/runs/train/anti_uav_rgb_yolo26n_smoke3/`
+- 权重文件：`best.pt`、`last.pt`
+- 验证指标：
+  - `precision = 0.786`
+  - `recall = 0.745`
+  - `mAP50 = 0.835`
+  - `mAP50-95 = 0.311`
+
+这组结果仅用于验证“数据转换 + dataloader + CUDA 训练链”已打通，不代表正式基线性能。
+
 ## 已知环境问题
 
 - `conda run -n vision-uav ...` 在当前 Windows GBK 控制台下会触发一次 `UnicodeEncodeError` 的 Conda 输出编码问题。
@@ -66,17 +104,15 @@
 
 ## 当前未完成项
 
-以下结果还没有真实跑出，因为当前工作区没有本地 `Anti-UAV` 原始数据，也还没有完成独立 CUDA 环境安装后的训练：
+以下结果还没有真实跑出：
 
-1. `Anti-UAV` 真实转换统计
-2. `YOLO26n` 1 epoch 冒烟训练
-3. `YOLO26s` 正式训练指标
-4. `best.pt -> model.onnx` 的真实导出产物
-5. `Drone-vs-Bird` 上的鸟类误检率
+1. `YOLO26s` 正式训练指标
+2. `best.pt -> model.onnx` 的真实导出产物
+3. `Drone-vs-Bird` 上的鸟类误检率
 
 ## 下一步最短路径
 
-1. 下载并解压 `Anti-UAV` RGB 数据到 `vision_uav/data/raw/anti_uav/`。
-2. 执行 `prepare_anti_uav.py` 生成训练集。
-3. 在 `vision-uav` 环境中先跑 `train_smoke.yaml`，再跑 `train_baseline.yaml`。
-4. 用 `infer_video.py` 和 `export_onnx.py` 产出第一版可消费结果。
+1. 在 `vision-uav` 环境中从 `train_baseline.yaml` 开始跑正式训练。
+2. 用 `infer_video.py` 对真实测试视频导出 `overlay.mp4 + predictions.jsonl`。
+3. 用 `export_onnx.py` 导出第一版 `model.onnx` 并做 `onnxruntime` 验证。
+4. 引入 `Drone-vs-Bird` 评估鸟类误检率，再决定要不要补第二阶段分类头。
