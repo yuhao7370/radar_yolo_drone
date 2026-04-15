@@ -1,0 +1,19 @@
+source_root: vision_uav/data/raw/anti_uav
+output_root: vision_uav/data/processed/anti_uav_rgb_detect
+dataset_yaml_name: anti_uav_rgb_detect.yaml
+seed: 20260415
+split_ratios:
+  train: 0.8
+  val: 0.1
+  test: 0.1
+frame_stride:
+  train: 5
+  val: 10
+  test: 10
+sequence_filters:
+  include_prefixes: []
+  exclude_prefixes: []
+paths:
+  rgb_video_name: RGB.mp4
+  rgb_label_name: RGB_label.json
+class_name: uav
