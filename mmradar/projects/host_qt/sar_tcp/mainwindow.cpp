@@ -116,7 +116,22 @@ MainWindow::MainWindow(QWidget *parent)
         connect(sar_data_cleaner1,SIGNAL(clean_finish(QString)),this,SLOT(clean_finish(QString)));
         sar_bp_1d_1=new sar_bp_1d();
         sar_bp_1d_1->set_file(clean_file_path);
-        sar_bp_1d_1->set_res_name(data_file("res.jpg"));
+        if(runtime_config.fusion_export_enabled)
+        {
+            QDir().mkpath(runtime_config.fusion_radar_dir());
+            sar_bp_1d_1->set_res_name(QDir(runtime_config.fusion_radar_dir()).filePath("final_res.jpg"));
+            sar_bp_1d_1->set_fusion_export(
+                runtime_config.fusion_export_enabled,
+                runtime_config.fusion_radar_dir(),
+                runtime_config.fusion_session_id,
+                runtime_config.fusion_snapshot_stride_trip,
+                runtime_config.fusion_save_final_res
+            );
+        }
+        else
+        {
+            sar_bp_1d_1->set_res_name(data_file("res.jpg"));
+        }
 
         connect(sar_bp_1d_1,SIGNAL(get_img(QImage,QImage)),this,SLOT(get_img(QImage,QImage)));
         mean=0;

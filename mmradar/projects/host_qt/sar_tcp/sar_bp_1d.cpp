@@ -1,7 +1,24 @@
 #include "sar_bp_1d.h"
 
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QTextStream>
+
+namespace {
+
+void write_json_file(const QString &file_path, const QJsonObject &object)
+{
+    QFile file(file_path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        qWarning() << "无法写入 JSON 文件:" << file_path;
+        return;
+    }
+    file.write(QJsonDocument(object).toJson(QJsonDocument::Indented));
+}
+
+}
 
 sar_bp_1d::sar_bp_1d()
 {
@@ -23,6 +40,11 @@ sar_bp_1d::sar_bp_1d()
     sar_high=-1;
     m_res_name="res.jpg";
     busy=0;
+    fusion_export_enabled=false;
+    fusion_session_id="demo_session";
+    fusion_output_dir="";
+    fusion_snapshot_stride_trip=10;
+    fusion_save_final_res=true;
 }
 void sar_bp_1d::set_geo(double x,double y,double w,double h)//单位：米
 {
@@ -114,6 +136,43 @@ void sar_bp_1d::run(void)
 
     QImage dist_img(1000,trip_num,QImage::Format_RGB888);
     fftw_plan p;
+    QFile fusion_jsonl_file;
+    QTextStream fusion_jsonl_stream;
+    int fusion_frame_id=0;
+    const bool export_enabled = fusion_export_enabled && !fusion_output_dir.isEmpty();
+
+    if(export_enabled)
+    {
+        QDir().mkpath(QDir(fusion_output_dir).filePath("frames"));
+        fusion_jsonl_file.setFileName(QDir(fusion_output_dir).filePath("radar_frames.jsonl"));
+        if(fusion_jsonl_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        {
+            fusion_jsonl_stream.setDevice(&fusion_jsonl_file);
+            fusion_jsonl_stream.setCodec("UTF-8");
+        }
+        else
+        {
+            qWarning()<<"无法创建 fusion jsonl:" << fusion_jsonl_file.fileName();
+        }
+
+        QJsonObject session_meta;
+        session_meta["session_id"]=fusion_session_id;
+        session_meta["source_file"]=m_name;
+        session_meta["trip_len"]=trip_len;
+        session_meta["trip_num"]=static_cast<qint64>(trip_num);
+        session_meta["snapshot_stride_trip"]=fusion_snapshot_stride_trip;
+        session_meta["img_x"]=m_x;
+        session_meta["img_y"]=m_y;
+        session_meta["img_w"]=m_w;
+        session_meta["img_h"]=m_h;
+        session_meta["grid_x"]=m_x_num;
+        session_meta["grid_y"]=m_y_num;
+        session_meta["sar_height"]=sar_high;
+        session_meta["speed"]=m_speed;
+        session_meta["export_mode"]="bp_snapshot_mvp";
+        session_meta["note"]="当前导出的是 BP 成像快照，仅用于离线融合接口验证与可视化演示。";
+        write_json_file(QDir(fusion_output_dir).filePath("session_meta.json"),session_meta);
+    }
 
     int color=0;
     for(int j=0;j<1000;j++)
@@ -143,22 +202,21 @@ void sar_bp_1d::run(void)
 
         qDebug()<<"成像进度"<<i<<"/"<<trip_num;
 
-        static int cnt=0;
-        if(cnt++%10==9)
+        if(export_enabled)
         {
-            cnt=0;
-            static int tmp_cnt=0;
-            const QFileInfo res_info(m_res_name);
-            const QString progress_dir = res_info.absolutePath();
-            if(!progress_dir.isEmpty())
+            if((i % fusion_snapshot_stride_trip)!=0)
             {
-                res.mirrored(1,1).save(QDir(progress_dir).filePath(QString("progress_%1.jpg").arg(tmp_cnt)));
+                continue;
             }
-            tmp_cnt++;
         }
         else
         {
-            continue;
+            static int cnt=0;
+            if(cnt++%10!=9)
+            {
+                continue;
+            }
+            cnt=0;
         }
 
 
@@ -296,7 +354,34 @@ void sar_bp_1d::run(void)
 
                 }
             }
-            emit get_img(res.mirrored(1,1),dist_img);
+            QImage export_img=res.mirrored(1,1);
+            if(export_enabled && fusion_jsonl_file.isOpen())
+            {
+                const QString relative_img_path=QString("frames/frame_%1.jpg").arg(fusion_frame_id,6,10,QLatin1Char('0'));
+                const QString full_img_path=QDir(fusion_output_dir).filePath(relative_img_path);
+                export_img.save(full_img_path);
+
+                QJsonObject frame_obj;
+                frame_obj["session_id"]=fusion_session_id;
+                frame_obj["frame_id"]=fusion_frame_id;
+                frame_obj["trip_idx"]=i;
+                frame_obj["now_pt"]=static_cast<qint64>(now_pt);
+                frame_obj["timestamp_ms"]=static_cast<double>(now_pt)/1000.0;
+                frame_obj["sar_pos_x_m"]=sar_pos_x;
+                frame_obj["img_path"]=relative_img_path;
+                frame_obj["img_x"]=m_x;
+                frame_obj["img_y"]=m_y;
+                frame_obj["img_w"]=m_w;
+                frame_obj["img_h"]=m_h;
+                frame_obj["grid_x"]=m_x_num;
+                frame_obj["grid_y"]=m_y_num;
+                frame_obj["sar_height"]=sar_high;
+                frame_obj["speed"]=m_speed;
+                fusion_jsonl_stream << QJsonDocument(frame_obj).toJson(QJsonDocument::Compact) << "\n";
+                fusion_jsonl_stream.flush();
+                fusion_frame_id++;
+            }
+            emit get_img(export_img,dist_img);
         }
 
 
@@ -332,7 +417,15 @@ void sar_bp_1d::run(void)
         }
     }
     res=res.mirrored(1,1);
+    if(export_enabled && fusion_save_final_res)
+    {
+        res.save(QDir(fusion_output_dir).filePath("final_res.jpg"));
+    }
     emit get_img(res,dist_img);
+    if(fusion_jsonl_file.isOpen())
+    {
+        fusion_jsonl_file.close();
+    }
     busy=0;
 
 
@@ -367,6 +460,14 @@ void sar_bp_1d::set_noise_clean_file(QString file)
 void sar_bp_1d::set_res_name(QString res_name)//设置成像结果存储路径+文件名
 {
     m_res_name=res_name;
+}
+void sar_bp_1d::set_fusion_export(bool enabled,const QString &output_dir,const QString &session_id,int snapshot_stride_trip,bool save_final_res)
+{
+    fusion_export_enabled=enabled;
+    fusion_output_dir=output_dir;
+    fusion_session_id=session_id;
+    fusion_snapshot_stride_trip=qMax(1,snapshot_stride_trip);
+    fusion_save_final_res=save_final_res;
 }
 QImage sar_bp_1d::get_res_at_level(double level)
 {

@@ -45,6 +45,9 @@ RuntimeConfig::RuntimeConfig()
     , speed(0.12)
     , sar_height(0.872)
     , contrast_level(6764.0)
+    , fusion_export_enabled(false)
+    , fusion_snapshot_stride_trip(10)
+    , fusion_save_final_res(true)
     , loaded_from_file(false)
 {
 }
@@ -89,6 +92,20 @@ RuntimeConfig RuntimeConfig::load()
     config.speed = settings.value("imaging/speed", config.speed).toDouble();
     config.sar_height = settings.value("imaging/sar_height", config.sar_height).toDouble();
     config.contrast_level = settings.value("imaging/contrast_level", config.contrast_level).toDouble();
+    config.fusion_export_enabled = settings.value("fusion_export/enabled", config.fusion_export_enabled).toBool();
+    config.fusion_output_dir = resolve_from_root(
+        config.project_root,
+        settings.value("fusion_export/output_dir", "resources/fusion_sessions").toString()
+    );
+    config.fusion_session_id = settings.value("fusion_export/session_id", "demo_session").toString();
+    config.fusion_snapshot_stride_trip = qMax(
+        1,
+        settings.value("fusion_export/snapshot_stride_trip", config.fusion_snapshot_stride_trip).toInt()
+    );
+    config.fusion_save_final_res = settings.value(
+        "fusion_export/save_final_res",
+        config.fusion_save_final_res
+    ).toBool();
     return config;
 }
 
@@ -112,4 +129,14 @@ QString RuntimeConfig::find_project_root()
 QString RuntimeConfig::data_file(const QString &file_name) const
 {
     return QDir(data_dir).filePath(file_name);
+}
+
+QString RuntimeConfig::fusion_session_root() const
+{
+    return QDir(fusion_output_dir).filePath(fusion_session_id);
+}
+
+QString RuntimeConfig::fusion_radar_dir() const
+{
+    return QDir(fusion_session_root()).filePath("radar");
 }

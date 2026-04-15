@@ -21,6 +21,11 @@ struct RuntimeConfig
     double speed;
     double sar_height;
     double contrast_level;
+    bool fusion_export_enabled;
+    QString fusion_output_dir;
+    QString fusion_session_id;
+    int fusion_snapshot_stride_trip;
+    bool fusion_save_final_res;
     bool loaded_from_file;
 
     RuntimeConfig();
@@ -29,6 +34,8 @@ struct RuntimeConfig
     static QString find_project_root();
 
     QString data_file(const QString &file_name) const;
+    QString fusion_session_root() const;
+    QString fusion_radar_dir() const;
 };
 
 #endif // RUNTIME_CONFIG_H

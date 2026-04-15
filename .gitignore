@@ -76,4 +76,5 @@ vision_uav/cache/
 vision_uav/.pytest_cache/
 vision_uav/.mypy_cache/
 vision_uav/.ruff_cache/
+mmradar/resources/fusion_sessions/
 yolo*.pt

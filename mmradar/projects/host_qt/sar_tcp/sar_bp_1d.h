@@ -8,6 +8,7 @@
 #include <QFile>
 #include <complex>
 #include <QImage>
+#include <QJsonObject>
 
 #include "fftw3.h"
 
@@ -30,6 +31,11 @@ public:
 
     QString m_res_name;
     bool busy;
+    bool fusion_export_enabled;
+    QString fusion_session_id;
+    QString fusion_output_dir;
+    int fusion_snapshot_stride_trip;
+    bool fusion_save_final_res;
 
 
     sar_bp_1d();
@@ -41,6 +47,13 @@ public:
     void set_noise_clean_file(QString file);
     QImage get_res_at_level(double level);
     void set_sar_high(double h);
+    void set_fusion_export(
+        bool enabled,
+        const QString &output_dir,
+        const QString &session_id,
+        int snapshot_stride_trip,
+        bool save_final_res
+    );
     void run(void) override;
 
     double sar_high;//雷达高度，设置后成像结果将采用地面坐标系，如果为负数则结果为距离-方位坐标系
