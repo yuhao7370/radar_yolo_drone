@@ -1,0 +1,17 @@
+model: vision_uav/runs/train/anti_uav_rgb_yolo26s_a800_b643/weights/best.pt
+fallback_model: yolo11s.pt
+data: vision_uav/data/processed/anti_uav_rgb_detect_hn/anti_uav_rgb_detect_hn.yaml
+project: vision_uav/runs/train
+name: anti_uav_rgb_yolo26s_a800_b643_hn
+device: 0
+imgsz: 960
+epochs: 12
+batch: 64
+workers: 16
+patience: 4
+pretrained: false
+cache: ram
+cos_lr: true
+close_mosaic: 5
+verbose: true
+exist_ok: false

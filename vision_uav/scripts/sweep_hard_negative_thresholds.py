@@ -6,13 +6,15 @@ import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import cv2
 
 from common import ensure_dir, extract_detection_metrics, load_yaml, load_yolo_model, resolve_workspace_path
 from evaluate import resolve_eval_args
 from infer_video import IMAGE_SUFFIXES, iter_image_paths
+
+VIDEO_SUFFIXES = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
 
 
 @dataclass
@@ -35,34 +37,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def iter_frames(source: Path, fps: float) -> Iterable[tuple[int, float, Any]]:
-    if source.is_dir():
-        image_paths = iter_image_paths(source)
-        if not image_paths:
-            raise ValueError(f"No images found under {source}")
-        for frame_id, image_path in enumerate(image_paths):
-            frame = cv2.imread(str(image_path))
-            if frame is None:
-                raise RuntimeError(f"Failed to read image: {image_path}")
-            yield frame_id, (frame_id / fps) * 1000.0, frame
-        return
-
-    capture = cv2.VideoCapture(str(source))
-    if not capture.isOpened():
-        raise RuntimeError(f"Failed to open source video: {source}")
-    frame_id = 0
-    try:
-        while True:
-            ok, frame = capture.read()
-            if not ok:
-                break
-            timestamp_ms = capture.get(cv2.CAP_PROP_POS_MSEC)
-            yield frame_id, float(timestamp_ms)
-            frame_id += 1
-    finally:
-        capture.release()
-
-
 def summarize_source(model, source_cfg: SourceConfig, conf: float, imgsz: int, device: int | str) -> dict[str, Any]:
     total_frames = 0
     frames_with_detections = 0
@@ -71,10 +45,37 @@ def summarize_source(model, source_cfg: SourceConfig, conf: float, imgsz: int, d
 
     source = source_cfg.source
     if source.is_dir():
-        frame_iter = (
-            (frame_id, (frame_id / source_cfg.fps) * 1000.0, cv2.imread(str(image_path)))
-            for frame_id, image_path in enumerate(iter_image_paths(source))
-        )
+        image_paths = iter_image_paths(source)
+        if image_paths:
+            frame_iter = (
+                (frame_id, (frame_id / source_cfg.fps) * 1000.0, cv2.imread(str(image_path)))
+                for frame_id, image_path in enumerate(image_paths)
+            )
+        else:
+            video_paths = sorted(
+                path for path in source.iterdir()
+                if path.is_file() and path.suffix.lower() in VIDEO_SUFFIXES
+            )
+            if not video_paths:
+                raise ValueError(f"No supported image or video files found under {source}")
+
+            def _video_dir_iter():
+                frame_id = 0
+                for video_path in video_paths:
+                    capture = cv2.VideoCapture(str(video_path))
+                    if not capture.isOpened():
+                        raise RuntimeError(f"Failed to open source video: {video_path}")
+                    try:
+                        while True:
+                            ok, frame = capture.read()
+                            if not ok:
+                                break
+                            yield frame_id, float(frame_id / source_cfg.fps * 1000.0), frame
+                            frame_id += 1
+                    finally:
+                        capture.release()
+
+            frame_iter = _video_dir_iter()
     else:
         capture = cv2.VideoCapture(str(source))
         if not capture.isOpened():
