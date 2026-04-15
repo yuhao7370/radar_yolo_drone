@@ -25,6 +25,7 @@
 #include "lwip/ip_addr.h"
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
+#include "net_config.h"
 #include <string.h>
 
 
@@ -261,9 +262,9 @@ void eth_init(void)
 	/* the mac address of the board. this should be unique per board */
 	
 	netif = &server_netif;
-	IP4_ADDR(&(ipaddr.u_addr.ip4), 192, 168, 1, 11);
-	IP4_ADDR(&(netmask.u_addr.ip4), 255, 255, 255, 0);
-	IP4_ADDR(&(gw.u_addr.ip4), 192, 168, 1, 11);
+	IP4_ADDR(&(ipaddr.u_addr.ip4), BOARD_IP_1, BOARD_IP_2, BOARD_IP_3, BOARD_IP_4);
+	IP4_ADDR(&(netmask.u_addr.ip4), NETMASK_1, NETMASK_2, NETMASK_3, NETMASK_4);
+	IP4_ADDR(&(gw.u_addr.ip4), GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);
 	lwip_init();
 	if (!xemac_add(netif, &ipaddr, &netmask, &gw, mac_ethernet_address, XPAR_XEMACPS_0_BASEADDR)) {
 	xil_printf("Error adding N/W interface\r\n");
@@ -425,9 +426,9 @@ void send_init(void)
 		}
 
 		/* connect to iperf tcp server */
-		IP4_ADDR(&(ipaddress.u_addr.ip4),  192, 168, 1, 2);		/* iperf server address */
+		IP4_ADDR(&(ipaddress.u_addr.ip4), HOST_IP_1, HOST_IP_2, HOST_IP_3, HOST_IP_4);
 
-		port = 2829;					/* iperf default port */
+		port = HOST_TCP_PORT;
 
 
 	    tcp_trans_done = 1;
@@ -963,5 +964,4 @@ int main(void)
 
 
 // }
-
 
